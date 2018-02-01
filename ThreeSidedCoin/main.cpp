@@ -3,6 +3,7 @@
 #include <random>
 #include <map>
 #include <string>
+#include "Vector.h"
 
 const double PI = 3.141592653589793238462643383279502884197169399375105820974944592;
 const double G = 9.80665; // m/s^2
@@ -54,6 +55,7 @@ public:
 	double KE = 0;
 	double PE = 0;
 	double RE = 0;
+	double omegaSign = 1.0; // either 1.0 or -1.0
 
 	ThreeSidedCoin(double theta_) :
 		radius (RADIUS),
@@ -94,10 +96,39 @@ public:
 		log("Total energy: " + std::to_string(PE + KE + RE));
 	}
 
+	void setPE(const double height) {
+		PE = G * height * mass;
+	}
+
+	void setKE(const double velocity) {
+		KE = 0.5 * mass * velocity * velocity;
+	}
+
+	void setRE(const double omega) {
+		if (omega < 0) {
+			omegaSign = -1.0;
+		} else {
+			omegaSign = 1.0;
+		}
+
+		RE = 0.5 * momentI * omega * omega;
+	}
+
+	double getHeight() const {
+		return PE / (G * mass);
+	}
+
+	double getVelocity() const {
+		return std::sqrt(2 * KE / mass);
+	}
+
+	double getOmega() const {
+		return omegaSign * std::sqrt(2 * RE / momentI);
+	}
+
 	void collide() {
 		// randomly choose the angle that the coin impacts at
 		double alpha = getRandomAlpha();
-		alpha = theta;
 
 		logTotalEnergy();
 		// position the coin at the required height for the edge to touch
@@ -111,22 +142,35 @@ public:
 		
 
 		// Find impulse
-		double velocity = std::sqrt(2.0 * KE / mass);
-		double impulse = 2.0 * COEFFICIENT_RESTITUTION * mass * velocity;
+		Vector velocityCG (0.0, -getVelocity());
+		double R_angle = (alpha > 0.0) ? alpha - theta : alpha + theta;
+		Vector R = Vector::fromAngleAndMag(R_angle, centerToEdge);
+		double omega = getOmega();
+		// TODO get velocity vector at contact edge
+
+		//Vector impulse = 2.0 * COEFFICIENT_RESTITUTION * mass * velocity;
+
+		//// Linear
+		//double delta_velocity = impulse / mass * std::cos(std::abs(alpha) - theta);
+		//double new_vel = velocity - delta_velocity;
+		//double new_KE = 0.5 * mass * new_vel * new_vel;
+		//RE -= new_KE - KE;
+		//KE = new_KE;
+
 		
 		
-		// Rotation
-		double omega = std::sqrt(2.0 * RE / momentI);
-		double delta_omega = impulse * centerToEdge / momentI * std::sin(std::abs(alpha) - theta);
-		if (alpha < 0) { delta_omega *= -1.0; }
+		//// Rotation
+		//double omega = std::sqrt(2.0 * RE / momentI);
+		//double delta_omega = impulse * centerToEdge / momentI * std::sin(std::abs(alpha) - theta);
+		//if (alpha < 0) { delta_omega *= -1.0; }
 
-		double new_omega = omega + delta_omega;
-		RE = 0.5 * momentI * new_omega * new_omega;
+		//double new_omega = omega + delta_omega;
+		//RE = 0.5 * momentI * new_omega * new_omega;
 
-		// Linear
-		double delta_velocity = impulse / mass * std::cos(std::abs(alpha) - theta);
-		double new_vel = velocity - delta_velocity;
-		KE = 0.5 * mass * new_vel * new_vel;
+		//// Linear
+		//double delta_velocity = impulse / mass * std::cos(std::abs(alpha) - theta);
+		//double new_vel = velocity - delta_velocity;
+		//KE = 0.5 * mass * new_vel * new_vel;
 
 		logTotalEnergy();
 	}

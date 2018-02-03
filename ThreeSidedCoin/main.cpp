@@ -92,8 +92,11 @@ public:
 		return RADIUS;
 	}
 
-	void logTotalEnergy() {
-		log("Total energy: " + std::to_string(PE + KE + RE));
+	void logTotalEnergy() const {
+		log(" PE:" + std::to_string(PE) + 
+			" KE:" + std::to_string(KE) +
+			" RE:" + std::to_string(RE) +
+			" Total energy : " + std::to_string(PE + KE + RE));
 	}
 
 	void setPE(const double height) {
@@ -144,9 +147,27 @@ public:
 		// Find impulse
 		Vector velocityCG (0.0, -getVelocity());
 		double R_angle = (alpha > 0.0) ? alpha - theta : alpha + theta;
-		Vector R = Vector::fromAngleAndMag(R_angle, centerToEdge);
+		Vector R = Vector::fromAngleAndMag(R_angle, centerToEdge); // In world coordinates
 		double omega = getOmega();
-		Vector velocity_contact = cross(omega, R);
+		Vector velocity_contact = velocityCG + cross(omega, R);
+		// Velocity along the normal
+		double v_n = velocity_contact.y;
+		if (v_n > 0) {
+			return; // The point is actually moving away; no collision
+		}
+		
+		Vector impulse(
+			0.0,
+			-(1 + COEFFICIENT_RESTITUTION) * v_n/
+			(1/mass + (R.x*R.x)/momentI)
+		);
+
+		double new_omega = omega + impulse.cross(R)/momentI;
+		Vector new_vel = velocityCG + impulse / mass;
+
+		setKE(new_vel.y);
+		setRE(new_omega);
+
 
 		//Vector impulse = 2.0 * COEFFICIENT_RESTITUTION * mass * velocity;
 

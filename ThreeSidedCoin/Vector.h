@@ -18,13 +18,15 @@ public:
 	Vector operator+ (const Vector& v) const {
 		return Vector(x + v.x, y + v.y);
 	}
+	Vector operator- (const Vector& v) const {
+		return *this + v.flip();
+	}
+	Vector operator/ (const double& v) const {
+		return Vector(x / v, y / v);
+	}
 
 	Vector flip() const {
 		return Vector(-x, -y);
-	}
-
-	Vector operator- (const Vector& v) const {
-		return *this + v.flip();
 	}
 
 	double mag() const {

@@ -146,7 +146,7 @@ public:
 		double R_angle = (alpha > 0.0) ? alpha - theta : alpha + theta;
 		Vector R = Vector::fromAngleAndMag(R_angle, centerToEdge);
 		double omega = getOmega();
-		// TODO get velocity vector at contact edge
+		Vector velocity_contact = cross(omega, R);
 
 		//Vector impulse = 2.0 * COEFFICIENT_RESTITUTION * mass * velocity;
 

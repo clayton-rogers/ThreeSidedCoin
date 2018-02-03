@@ -15,8 +15,6 @@ public:
 		x(v.x), y(v.y)
 	{}
 
-
-
 	Vector operator+ (const Vector& v) const {
 		return Vector(x + v.x, y + v.y);
 	}
@@ -64,4 +62,24 @@ public:
 
 Vector operator* (double value, const Vector& vector) {
 	return Vector(vector.x * value, vector.y * value);
+}
+
+// Assumes first vector only has a z component and the second
+// has x,y. Then the resultant cross product will be in the 
+// x,y plane.
+// https://en.wikipedia.org/wiki/Cross_product#Coordinate_notation
+Vector cross(double z_value, const Vector& v) {
+	//double u1 = 0.0, u2 = 0.0, u3 = z_value;
+	//double v1 = v.x, v2 = v.y, v3 = 0;
+
+	//double new_x = u2*v3 - u3*v2;
+	//double new_y = u3*v1 - u1*v3;
+	//double new_z = u1*v2 - u2*v1; // Always zero
+
+	//return Vector(new_x, new_y);
+
+	return Vector(
+		(-z_value*v.y),
+		(z_value*v.x)
+	);
 }

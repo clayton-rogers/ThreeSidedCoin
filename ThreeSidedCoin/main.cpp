@@ -1,9 +1,15 @@
+#include "Vector.h"
+
+
 #include <iostream>
 #include <cmath>
 #include <random>
 #include <map>
 #include <string>
-#include "Vector.h"
+
+// TODO remove
+#include <thread>
+#include <chrono>
 
 // Actual constants
 const double PI = 3.141592653589793238462643383279502884197169399375105820974944592;
@@ -11,14 +17,16 @@ const double G = 9.80665; // m/s^2
 const double DENSITY = 1225.0; // kg/m^3
 
 // Experimental setup
-const double COEFFICIENT_RESTITUTION = 1.0; // ND 
+const double COEFFICIENT_RESTITUTION = 0.9; // ND 
 const double RADIUS = 0.03; // m = 3 cm
 const double INITIAL_HEIGHT = 0.2; // m = 20 cm
 // NOTE: theta is set in the program body
-const int    NUMBER_OF_THROWS = 1;
+const int    NUMBER_OF_THROWS = 500;
+using namespace std::chrono_literals;
+const auto   SLEEP_TIME = 0.0s;
 
 // Program constants
-const bool   VERBOSE = true;
+const bool   VERBOSE = false;
 
 void log(std::string message) {
 	if (VERBOSE) {
@@ -106,10 +114,12 @@ public:
 	}
 
 	void logTotalEnergy() const {
-		log(" PE:" + std::to_string(PE) +
-			" KE:" + std::to_string(KE) +
-			" RE:" + std::to_string(RE) +
-			" Total energy : " + std::to_string(getTotalEnergy()));
+		if (VERBOSE) {
+			log(" PE:" + std::to_string(PE) +
+				" KE:" + std::to_string(KE) +
+				" RE:" + std::to_string(RE) +
+				" Total energy : " + std::to_string(getTotalEnergy()));
+		}
 	}
 
 	void setPE(const double height) {
@@ -146,7 +156,7 @@ public:
 		return PE + KE + RE;
 	}
 
-		void collide() {
+	void collide() {
 		// randomly choose the angle that the coin impacts at
 		const double alpha = getRandomAlpha();
 		last_alpha = alpha;
@@ -156,35 +166,42 @@ public:
 		const double height = centerToEdge * std::cos(std::abs(alpha) - theta);
 		const double newPE = G * height * mass;
 		const double deltaPE = PE - newPE;
-		KE += deltaPE;
-		PE = newPE;
 
-		// Find impulse
-		const Vector velocityCG(0.0, -getVelocity());
-		const double R_angle = (alpha > 0.0) ? alpha - theta : alpha + theta;
-		const Vector R = Vector::fromAngleAndMag(R_angle, centerToEdge); // In world coordinates
-		const double omega = getOmega();
-		const Vector velocity_contact = velocityCG + cross(omega, R);
-		// Velocity along the normal
-		const double v_n = velocity_contact.y;
-		if (v_n > 0) {
-			log("Point is moving away from collision!");
-			return; // The point is actually moving away; no collision
-		}
+		// If we could not possibly borrow 
+if (newPE > (KE + PE)) {
+	log("Impossible alpha!");
+	return;
+}
 
-		const Vector impulse(
-			0.0,
-			-(1 + COEFFICIENT_RESTITUTION) * v_n /
-			(1 / mass + (R.x*R.x) / momentI)
-		);
+KE += deltaPE;
+PE = newPE;
 
-		const double new_omega = omega - impulse.cross(R) / momentI;
-		const Vector new_vel = velocityCG + impulse / mass;
+// Find impulse
+const Vector velocityCG(0.0, -getVelocity());
+const double R_angle = (alpha > 0.0) ? alpha - theta : alpha + theta;
+const Vector R = Vector::fromAngleAndMag(R_angle, centerToEdge); // In world coordinates
+const double omega = getOmega();
+const Vector velocity_contact = velocityCG + cross(omega, R);
+// Velocity along the normal
+const double v_n = velocity_contact.y;
+if (v_n > 0) {
+	log("Point is moving away from collision!");
+	return; // The point is actually moving away; no collision
+}
 
-		setKE(new_vel.y);
-		setRE(new_omega);
+const Vector impulse(
+	0.0,
+	-(1 + COEFFICIENT_RESTITUTION) * v_n /
+	(1 / mass + (R.x*R.x) / momentI)
+);
 
-		logTotalEnergy();
+const double new_omega = omega - impulse.cross(R) / momentI;
+const Vector new_vel = velocityCG + impulse / mass;
+
+setKE(new_vel.y);
+setRE(new_omega);
+
+logTotalEnergy();
 	}
 
 	Side getSideFromAlpha(double alpha) {
@@ -200,6 +217,7 @@ public:
 	Side throwCoin() {
 		while (true) {
 			// Do a collision
+			std::this_thread::sleep_for(SLEEP_TIME);
 			collide();
 
 			// If the total energy is smaller than the critical energy
@@ -229,20 +247,35 @@ public:
 
 int main() {
 
-	
-	std::map<ThreeSidedCoin::Side, int> results;
-	for (int i = 0; i < NUMBER_OF_THROWS; ++i) {
-		ThreeSidedCoin c(radians(30));
-		ThreeSidedCoin::Side result = c.throwCoin();
-		results.at(result) += 1;
-	}
 
-	std::cout << "Results:\n"
-		<< "Heads: " + std::to_string(results.at(ThreeSidedCoin::Side::Heads))
-		<< "Tails: " + std::to_string(results.at(ThreeSidedCoin::Side::Tails))
-		<< "Edge:  " + std::to_string(results.at(ThreeSidedCoin::Side::Edge))
-		<< std::endl;
+
+	double theta = 30.0;
+
+	do {
+		std::map<ThreeSidedCoin::Side, int> results;
+		results[ThreeSidedCoin::Side::Heads] = 0;
+		results[ThreeSidedCoin::Side::Tails] = 0;
+		results[ThreeSidedCoin::Side::Edge] = 0;
+		for (int i = 0; i < NUMBER_OF_THROWS; ++i) {
+			ThreeSidedCoin c(radians(theta));
+			ThreeSidedCoin::Side result = c.throwCoin();
+			results.at(result) += 1;
+		}
+
+		std::cout << "Results:"
+			<< " Heads: " + std::to_string(results.at(ThreeSidedCoin::Side::Heads))
+			<< " Tails: " + std::to_string(results.at(ThreeSidedCoin::Side::Tails))
+			<< " Edge:  " + std::to_string(results.at(ThreeSidedCoin::Side::Edge))
+			<< " Theta: " + std::to_string(theta)
+			<< std::endl;
+
+		if (results.at(ThreeSidedCoin::Side::Tails) > results.at(ThreeSidedCoin::Side::Edge)) {
+			theta += 0.1;
+		} else {
+			theta -= 0.1;
+		}
+
+	} while (true);
 
 	return 0;
 }
-

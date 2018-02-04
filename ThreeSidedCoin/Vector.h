@@ -18,19 +18,9 @@ public:
 	Vector operator+ (const Vector& v) const {
 		return Vector(x + v.x, y + v.y);
 	}
-	Vector operator- (const Vector& v) const {
-		return *this + v.flip();
-	}
+
 	Vector operator/ (const double& v) const {
 		return Vector(x / v, y / v);
-	}
-
-	Vector flip() const {
-		return Vector(-x, -y);
-	}
-
-	double mag() const {
-		return std::sqrt(x*x + y*y);
 	}
 
 	double dot(const Vector& v) const {
@@ -39,10 +29,6 @@ public:
 
 	double cross(const Vector& v) const {
 		return x*v.y - y*v.x;
-	}
-
-	Vector normal() const {
-		return Vector(y, -x);
 	}
 
 	Vector rotate(double alpha) const {

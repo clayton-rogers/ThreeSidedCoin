@@ -21,7 +21,7 @@ const double COEFFICIENT_RESTITUTION = 0.9; // ND
 const double RADIUS = 0.03; // m = 3 cm
 const double INITIAL_HEIGHT = 0.2; // m = 20 cm
 // NOTE: theta is set in the program body
-const int    NUMBER_OF_THROWS = 500;
+const int    NUMBER_OF_THROWS = 1000;
 using namespace std::chrono_literals;
 const auto   SLEEP_TIME = 0.0s;
 
@@ -96,7 +96,7 @@ public:
 
 	double getRandomAlpha() const {
 		std::random_device rd;
-		std::mt19937 mt(rd());
+		std::mt19937_64 mt(rd());
 		std::uniform_real_distribution<double> dist(0.0, 1.0);
 		double x = dist(mt);
 		double angle = std::asin(x);

@@ -168,31 +168,6 @@ public:
 		setKE(new_vel.y);
 		setRE(new_omega);
 
-
-		//Vector impulse = 2.0 * COEFFICIENT_RESTITUTION * mass * velocity;
-
-		//// Linear
-		//double delta_velocity = impulse / mass * std::cos(std::abs(alpha) - theta);
-		//double new_vel = velocity - delta_velocity;
-		//double new_KE = 0.5 * mass * new_vel * new_vel;
-		//RE -= new_KE - KE;
-		//KE = new_KE;
-
-		
-		
-		//// Rotation
-		//double omega = std::sqrt(2.0 * RE / momentI);
-		//double delta_omega = impulse * centerToEdge / momentI * std::sin(std::abs(alpha) - theta);
-		//if (alpha < 0) { delta_omega *= -1.0; }
-
-		//double new_omega = omega + delta_omega;
-		//RE = 0.5 * momentI * new_omega * new_omega;
-
-		//// Linear
-		//double delta_velocity = impulse / mass * std::cos(std::abs(alpha) - theta);
-		//double new_vel = velocity - delta_velocity;
-		//KE = 0.5 * mass * new_vel * new_vel;
-
 		logTotalEnergy();
 	}
 

@@ -29,15 +29,15 @@ double degrees(double radians) {
 
 double calculateMass(double radius, double thickness) {
 	// V = pi r^2 h
-	double volume = PI * radius * radius * thickness;
+	const double volume = PI * radius * radius * thickness;
 	// m = rho V
-	double mass = volume * DENSITY;
+	const double mass = volume * DENSITY;
 
 	return mass;
 }
 
 double calculateMomentOfInertial(double mass, double radius, double thickness) {
-	double mI = 1.0 / 12.0 * mass * (3 * radius * radius + thickness* thickness);
+	const double mI = 1.0 / 12.0 * mass * (3 * radius * radius + thickness* thickness);
 	return mI;
 	// 1/2 m (3r^2 + h^2)
 }

@@ -269,11 +269,8 @@ int main() {
 			<< " Theta: " + std::to_string(theta)
 			<< std::endl;
 
-		if (results.at(ThreeSidedCoin::Side::Tails) > results.at(ThreeSidedCoin::Side::Edge)) {
-			theta += 0.1;
-		} else {
-			theta -= 0.1;
-		}
+		double error = results.at(ThreeSidedCoin::Side::Tails) - results.at(ThreeSidedCoin::Side::Edge);
+		theta += error * 0.001;
 
 	} while (true);
 

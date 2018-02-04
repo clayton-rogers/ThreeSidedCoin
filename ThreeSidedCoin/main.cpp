@@ -27,17 +27,17 @@ double degrees(double radians) {
 	return radians / PI * 180.0;
 }
 
-double calculateMass(double radius, double height) {
+double calculateMass(double radius, double thickness) {
 	// V = pi r^2 h
-	double volume = PI * radius * radius * height;
+	double volume = PI * radius * radius * thickness;
 	// m = rho V
 	double mass = volume * DENSITY;
 
 	return mass;
 }
 
-double calculateMomentOfInertial(double mass, double radius, double height) {
-	double mI = 1.0 / 12.0 * mass * (3 * radius * radius + height* height);
+double calculateMomentOfInertial(double mass, double radius, double thickness) {
+	double mI = 1.0 / 12.0 * mass * (3 * radius * radius + thickness* thickness);
 	return mI;
 	// 1/2 m (3r^2 + h^2)
 }
@@ -47,7 +47,7 @@ private:
 public:
 	const double radius;
 	const double theta;
-	const double height;
+	const double thickness;
 	double centerToEdge;
 	const double mass;
 	const double momentI;
@@ -60,15 +60,15 @@ public:
 	ThreeSidedCoin(double theta_) :
 		radius (RADIUS),
 		theta(theta_),
-		height (radius * 2 * std::tan(theta)),
+		thickness (radius * 2 * std::tan(theta)),
 		centerToEdge (radius / std::cos(theta)),
-		mass (calculateMass(radius, height)),
-		momentI (calculateMomentOfInertial(mass, radius, height))
+		mass (calculateMass(radius, thickness)),
+		momentI (calculateMomentOfInertial(mass, radius, thickness))
 	{
 		PE = G * INITIAL_HEIGHT * mass;
 	}
 
-	double getRandomAlpha() {
+	double getRandomAlpha() const {
 		std::random_device rd;
 		std::mt19937 mt(rd());
 		std::uniform_real_distribution<double> dist(0.0, 1.0);
@@ -85,11 +85,6 @@ public:
 			angle *= -1.0;
 		}
 		return angle;
-	}
-
-	double getHeight(double alpha) {
-		// TODO 
-		return RADIUS;
 	}
 
 	void logTotalEnergy() const {
@@ -131,39 +126,39 @@ public:
 
 	void collide() {
 		// randomly choose the angle that the coin impacts at
-		double alpha = getRandomAlpha();
+		const double alpha = getRandomAlpha();
 
 		logTotalEnergy();
 		// position the coin at the required height for the edge to touch
 		// calculate the new KE and PE that this would entail
-		double height = centerToEdge * std::cos(std::abs(alpha) - theta);
-		double newPE = G * height * mass;
-		double deltaPE = PE - newPE;
+		const double height = centerToEdge * std::cos(std::abs(alpha) - theta);
+		const double newPE = G * height * mass;
+		const double deltaPE = PE - newPE;
 		KE += deltaPE;
 		PE = newPE;
 		logTotalEnergy();
 		
 
 		// Find impulse
-		Vector velocityCG (0.0, -getVelocity());
-		double R_angle = (alpha > 0.0) ? alpha - theta : alpha + theta;
-		Vector R = Vector::fromAngleAndMag(R_angle, centerToEdge); // In world coordinates
-		double omega = getOmega();
-		Vector velocity_contact = velocityCG + cross(omega, R);
+		const Vector velocityCG (0.0, -getVelocity());
+		const double R_angle = (alpha > 0.0) ? alpha - theta : alpha + theta;
+		const Vector R = Vector::fromAngleAndMag(R_angle, centerToEdge); // In world coordinates
+		const double omega = getOmega();
+		const Vector velocity_contact = velocityCG + cross(omega, R);
 		// Velocity along the normal
-		double v_n = velocity_contact.y;
+		const double v_n = velocity_contact.y;
 		if (v_n > 0) {
 			return; // The point is actually moving away; no collision
 		}
 		
-		Vector impulse(
+		const Vector impulse(
 			0.0,
 			-(1 + COEFFICIENT_RESTITUTION) * v_n/
 			(1/mass + (R.x*R.x)/momentI)
 		);
 
-		double new_omega = omega + impulse.cross(R)/momentI;
-		Vector new_vel = velocityCG + impulse / mass;
+		const double new_omega = omega + impulse.cross(R)/momentI;
+		const Vector new_vel = velocityCG + impulse / mass;
 
 		setKE(new_vel.y);
 		setRE(new_omega);

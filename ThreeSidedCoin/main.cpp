@@ -22,10 +22,12 @@ const double RADIUS = 0.03; // m = 3 cm
 const double INITIAL_HEIGHT = 0.2; // m = 20 cm
 // NOTE: theta is set in the program body
 const int    NUMBER_OF_THROWS = 1000;
-using namespace std::chrono_literals;
-const auto   SLEEP_TIME = 0.0s;
+
 
 // Program constants
+using namespace std::chrono_literals;
+const bool SLEEP = false;
+const auto SLEEP_TIME = 0.0s;
 const bool   VERBOSE = false;
 
 void log(std::string message) {
@@ -94,10 +96,12 @@ public:
 		PE = G * INITIAL_HEIGHT * mass;
 	}
 
+
+
 	double getRandomAlpha() const {
-		std::random_device rd;
-		std::mt19937_64 mt(rd());
-		std::uniform_real_distribution<double> dist(0.0, 1.0);
+		static std::random_device rd;
+		static std::mt19937 mt(rd());
+		static std::uniform_real_distribution<double> dist(0.0, 1.0);
 		double x = dist(mt);
 		double angle = std::asin(x);
 		// probability distribution is cos(theta) , 0 .. 90
@@ -105,7 +109,7 @@ public:
 		// to get a value then you take the inverse: asin(x) = theta
 
 		// angle can actually be plus or minus this amout
-		std::uniform_int_distribution<> intdist(0, 1);
+		static std::uniform_int_distribution<> intdist(0, 1);
 		int sign = intdist(mt);
 		if (sign == 1) {
 			angle *= -1.0;
@@ -168,40 +172,44 @@ public:
 		const double deltaPE = PE - newPE;
 
 		// If we could not possibly borrow 
-if (newPE > (KE + PE)) {
-	log("Impossible alpha!");
-	return;
-}
+		if (newPE > (KE + PE)) {
+			if (VERBOSE) {
+				log("Impossible alpha!");
+			}
+			return;
+		}
 
-KE += deltaPE;
-PE = newPE;
+		KE += deltaPE;
+		PE = newPE;
 
-// Find impulse
-const Vector velocityCG(0.0, -getVelocity());
-const double R_angle = (alpha > 0.0) ? alpha - theta : alpha + theta;
-const Vector R = Vector::fromAngleAndMag(R_angle, centerToEdge); // In world coordinates
-const double omega = getOmega();
-const Vector velocity_contact = velocityCG + cross(omega, R);
-// Velocity along the normal
-const double v_n = velocity_contact.y;
-if (v_n > 0) {
-	log("Point is moving away from collision!");
-	return; // The point is actually moving away; no collision
-}
+		// Find impulse
+		const Vector velocityCG(0.0, -getVelocity());
+		const double R_angle = (alpha > 0.0) ? alpha - theta : alpha + theta;
+		const Vector R = Vector::fromAngleAndMag(R_angle, centerToEdge); // In world coordinates
+		const double omega = getOmega();
+		const Vector velocity_contact = velocityCG + cross(omega, R);
+		// Velocity along the normal
+		const double v_n = velocity_contact.y;
+		if (v_n > 0) {
+			if (VERBOSE) {
+				log("Point is moving away from collision!");
+			}
+			return; // The point is actually moving away; no collision
+		}
 
-const Vector impulse(
-	0.0,
-	-(1 + COEFFICIENT_RESTITUTION) * v_n /
-	(1 / mass + (R.x*R.x) / momentI)
-);
+		const Vector impulse(
+			0.0,
+			-(1 + COEFFICIENT_RESTITUTION) * v_n /
+			(1 / mass + (R.x*R.x) / momentI)
+		);
 
-const double new_omega = omega - impulse.cross(R) / momentI;
-const Vector new_vel = velocityCG + impulse / mass;
+		const double new_omega = omega - impulse.cross(R) / momentI;
+		const Vector new_vel = velocityCG + impulse / mass;
 
-setKE(new_vel.y);
-setRE(new_omega);
+		setKE(new_vel.y);
+		setRE(new_omega);
 
-logTotalEnergy();
+		logTotalEnergy();
 	}
 
 	Side getSideFromAlpha(double alpha) {
@@ -217,13 +225,17 @@ logTotalEnergy();
 	Side throwCoin() {
 		while (true) {
 			// Do a collision
-			std::this_thread::sleep_for(SLEEP_TIME);
+			if (SLEEP) {
+				std::this_thread::sleep_for(SLEEP_TIME);
+			}	
 			collide();
 
 			// If the total energy is smaller than the critical energy
 			// then the coin has no way of getting out of its current gravity well
 			if (getTotalEnergy() < criticalEnergy) {
-				log("No more energy!");
+				if (VERBOSE) {
+					log("No more energy!");
+				}
 				return getSideFromAlpha(last_alpha);
 			}
 
@@ -231,7 +243,9 @@ logTotalEnergy();
 			// the critical energy then the coin has enough speed to escape
 			// the gravity well by speed alone, so the next collision is a normal one
 			if ((KE + PE) > criticalEnergy) {
-				log("Bounced clear!");
+				if (VERBOSE) {
+					log("Bounced clear!");
+				}
 				continue;
 			}
 
@@ -239,7 +253,9 @@ logTotalEnergy();
 			// if it uses some of its rotational energy (i.e. the rotating edge hits and
 			// pushes the coin upwards). This will then make if more likely to hit at 
 			// certain angles. For now we do nothing special in this case.
-			log("Needed to use rotational energy!");
+			if (VERBOSE) {
+				log("Needed to use rotational energy!");
+			}
 		}
 	}
 
